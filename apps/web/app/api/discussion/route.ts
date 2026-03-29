@@ -51,10 +51,11 @@ export async function POST(request: NextRequest) {
     .neq("id", bookId)
     .limit(5);
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
+  const isLocalLLM = !!process.env.LOCAL_LLM_URL;
+  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
+  if (!isLocalLLM && !apiKey) {
     return NextResponse.json(
-      { error: "OpenRouter API key not configured" },
+      { error: "No LLM configured: set OPENROUTER_API_KEY or LOCAL_LLM_URL" },
       { status: 500 }
     );
   }

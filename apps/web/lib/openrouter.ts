@@ -1,11 +1,24 @@
-const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+import { OpenRouter } from "@openrouter/sdk";
+import type { ChatResponse } from "@openrouter/sdk/models/chatresponse.js";
+import { logModelDecision } from "./model-logger";
+
+const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL;
+const LOCAL_LLM_MODEL = process.env.LOCAL_LLM_MODEL ?? "llama3.3";
 
 export const MODELS = {
-  free: "meta-llama/llama-3.3-70b-instruct:free",
+  free: "nvidia/nemotron-3-super-120b-a12b:free",
   budget: "deepseek/deepseek-chat-v3-2",
   fast: "google/gemini-flash-lite-3.1",
   premium: "anthropic/claude-sonnet-4-6",
 };
+
+// Fallback chain for free tier — non-Google providers to avoid Google AI Studio rate limits
+// OpenRouter allows max 3 models in the fallback array
+const FREE_MODEL_FALLBACKS = [
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+];
 
 export interface Book {
   title: string;
@@ -113,43 +126,93 @@ Generate the discussion guide now.
   `.trim();
 }
 
+async function callOllama(
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string> {
+  const response = await fetch(`${LOCAL_LLM_URL}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer ollama" },
+    body: JSON.stringify({
+      model: LOCAL_LLM_MODEL,
+      max_tokens: 1200,
+      temperature: 0.8,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Ollama error ${response.status}: ${body}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content as string;
+}
+
 export async function generateDiscussion(
   book: Book,
   userProfile: UserProfile,
   apiKey: string,
   model: string = MODELS.free
 ): Promise<{ success: boolean; discussion?: DiscussionGuide; error?: string }> {
-  try {
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://verecto.app",
-        "X-Title": "Verecto",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1200,
-        temperature: 0.8,
-        messages: [
-          { role: "system", content: buildSystemPrompt() },
-          { role: "user", content: buildUserPrompt(book, userProfile) },
-        ],
-      }),
-    });
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    model: LOCAL_LLM_URL ? LOCAL_LLM_MODEL : model,
+    book: { title: book.title, author: book.author },
+    rawResponse: null as string | null,
+    parsedDiscussion: null as unknown | null,
+  };
 
-    if (!response.ok) {
-      throw new Error(`OpenRouter error: ${response.status}`);
+  try {
+    const systemPrompt = buildSystemPrompt();
+    const userPrompt = buildUserPrompt(book, userProfile);
+    let raw: string;
+
+    if (LOCAL_LLM_URL) {
+      raw = await callOllama(systemPrompt, userPrompt);
+    } else {
+      const client = new OpenRouter({
+        apiKey,
+        httpReferer: "https://verecto.app",
+        appTitle: "Verecto",
+      });
+
+      const response = await client.chat.send({
+        chatGenerationParams: {
+          ...(model.endsWith(":free")
+            ? { models: FREE_MODEL_FALLBACKS }
+            : { model }),
+          maxTokens: 2048,
+          temperature: 0.8,
+          provider: { requireParameters: true },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        },
+      });
+
+      const chatResponse = response as ChatResponse;
+      logEntry.model = chatResponse.model ?? logEntry.model;
+      raw = chatResponse.choices[0].message.content as string;
     }
 
-    const data = await response.json();
-    const raw = data.choices[0].message.content;
+    logEntry.rawResponse = raw;
     const discussion: DiscussionGuide = JSON.parse(raw);
+    logEntry.parsedDiscussion = discussion;
+    logModelDecision(logEntry);
 
     return { success: true, discussion };
   } catch (err) {
     console.error("Discussion generation failed:", err);
+    logModelDecision({
+      ...logEntry,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return {
       success: false,
       error: "Could not generate discussion. Please try again.",

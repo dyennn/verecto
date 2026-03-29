@@ -7,3 +7,4 @@ dist/
 .expo/
 *.tsbuildinfo
 next-env.d.ts
+logs/
