@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
+import type { MappedBook } from "@/lib/csv-parse";
 
 export interface BookRow {
   id: string;
@@ -101,5 +102,62 @@ export function useBooks() {
     return { data };
   }
 
-  return { books, loading, fetchBooks, addBook, updateBook };
+  async function importBooks(
+    mappedBooks: MappedBook[],
+    onProgress?: (done: number, total: number) => void
+  ): Promise<{ imported: number; skipped: number; errors: number }> {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { imported: 0, skipped: 0, errors: 0 };
+
+    // Build duplicate set from current books state
+    const existingKeys = new Set(
+      books.map((b) =>
+        `${b.title.toLowerCase().trim()}|||${(b.author ?? "").toLowerCase().trim()}`
+      )
+    );
+
+    // Filter out duplicates
+    const toInsert = mappedBooks.filter((b) => {
+      const key = `${b.title.toLowerCase().trim()}|||${(b.author ?? "").toLowerCase().trim()}`;
+      return !existingKeys.has(key);
+    });
+
+    const skipped = mappedBooks.length - toInsert.length;
+    let imported = 0;
+    let errors = 0;
+
+    // Insert in batches of 50
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
+      const batch = toInsert.slice(i, i + BATCH_SIZE).map((b) => ({
+        user_id: user.id,
+        title: b.title,
+        author: b.author ?? null,
+        genre: b.genre ?? null,
+        status: b.status,
+        mood: b.mood,
+        date_finished: b.date_finished,
+      }));
+
+      const { error } = await supabase.from("books").insert(batch);
+
+      if (error) {
+        errors += batch.length;
+      } else {
+        imported += batch.length;
+      }
+
+      onProgress?.(Math.min(i + BATCH_SIZE, toInsert.length), toInsert.length);
+    }
+
+    // Refresh state
+    await fetchBooks();
+
+    return { imported, skipped, errors };
+  }
+
+  return { books, loading, fetchBooks, addBook, updateBook, importBooks };
 }

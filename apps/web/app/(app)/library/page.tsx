@@ -6,16 +6,17 @@ import { searchBooks, getBookDetails, type BookSearchResult } from "@/lib/openli
 import { useBooks, type BookRow } from "@/hooks/useBooks";
 import { BookCard } from "@/components/BookCard";
 import { MoodTag } from "@/components/MoodTag";
+import { ImportModal } from "@/components/ImportModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
-import { Search, Plus, X, Loader2 } from "lucide-react";
+import { Search, Plus, X, Loader2, Upload } from "lucide-react";
 
 export default function LibraryPage() {
   const router = useRouter();
-  const { books, loading, addBook, updateBook } = useBooks();
+  const { books, loading, addBook, updateBook, importBooks } = useBooks();
   const { toast } = useToast();
 
   const [query, setQuery] = useState("");
@@ -23,6 +24,7 @@ export default function LibraryPage() {
   const [searching, setSearching] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<BookRow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const handleSearch = useCallback(
     async (q: string) => {
@@ -118,9 +120,15 @@ export default function LibraryPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <h1 className="font-[family-name:var(--font-serif)] text-3xl font-bold">
-        Library
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-[family-name:var(--font-serif)] text-3xl font-bold">
+          Library
+        </h1>
+        <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+          <Upload className="mr-2 h-4 w-4" />
+          Import CSV
+        </Button>
+      </div>
 
       {/* Search */}
       <div className="relative">
@@ -329,6 +337,13 @@ export default function LibraryPage() {
           </Card>
         </div>
       )}
+
+      <ImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        existingBooks={books}
+        onImport={importBooks}
+      />
     </div>
   );
 }
