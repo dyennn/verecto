@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
-import type { MappedBook } from "@/lib/csv-parse";
+import { normalizeForMatch, type MappedBook } from "@/lib/csv-parse";
 
 export interface BookRow {
   id: string;
@@ -114,14 +114,12 @@ export function useBooks() {
 
     // Build duplicate set from current books state
     const existingKeys = new Set(
-      books.map((b) =>
-        `${b.title.toLowerCase().trim()}|||${(b.author ?? "").toLowerCase().trim()}`
-      )
+      books.map((b) => normalizeForMatch(b.title, b.author ?? ""))
     );
 
     // Filter out duplicates
     const toInsert = mappedBooks.filter((b) => {
-      const key = `${b.title.toLowerCase().trim()}|||${(b.author ?? "").toLowerCase().trim()}`;
+      const key = normalizeForMatch(b.title, b.author ?? "");
       return !existingKeys.has(key);
     });
 

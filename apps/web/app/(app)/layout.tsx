@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { BookOpen, LayoutDashboard, Library, LogOut } from "lucide-react";
+import { BookOpen, LayoutDashboard, Library, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/library", label: "Library", icon: Library },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

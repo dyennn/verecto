@@ -1,5 +1,24 @@
 // Goodreads CSV parser and field mapper
 
+/**
+ * Normalizes a title+author pair into a stable key for duplicate detection.
+ * Handles diacritics, subtitles, punctuation, and whitespace differences.
+ */
+export function normalizeForMatch(title: string, author: string): string {
+  function norm(s: string): string {
+    return s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+      .toLowerCase()
+      .replace(/[:]\s*.*/g, "")        // strip subtitle after colon
+      .replace(/\s-\s.*/g, "")         // strip subtitle after " - "
+      .replace(/['".,!?()]/g, "")      // remove punctuation
+      .replace(/\s+/g, " ")            // collapse whitespace
+      .trim();
+  }
+  return `${norm(title)}|||${norm(author)}`;
+}
+
 export interface GoodreadsBook {
   title: string;
   author: string;

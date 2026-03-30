@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { parseGoodreadsCsv, mapGoodreadsToVerecto, type MappedBook } from "@/lib/csv-parse";
+import { parseGoodreadsCsv, mapGoodreadsToVerecto, normalizeForMatch, type MappedBook } from "@/lib/csv-parse";
 import type { BookRow } from "@/hooks/useBooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,15 +44,10 @@ export function ImportModal({
 
   // Count duplicates against existing library
   const existingKeys = new Set(
-    existingBooks.map(
-      (b) =>
-        `${b.title.toLowerCase().trim()}|||${(b.author ?? "").toLowerCase().trim()}`
-    )
+    existingBooks.map((b) => normalizeForMatch(b.title, b.author ?? ""))
   );
   const duplicates = parsed.filter((b) =>
-    existingKeys.has(
-      `${b.title.toLowerCase().trim()}|||${(b.author ?? "").toLowerCase().trim()}`
-    )
+    existingKeys.has(normalizeForMatch(b.title, b.author ?? ""))
   ).length;
   const toImport = parsed.length - duplicates;
 
