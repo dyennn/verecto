@@ -14,11 +14,15 @@ import {
   type ThemeVariables,
 } from "@/lib/themes";
 
+type ThemeMode = "light" | "dark";
+
 interface ThemeContextType {
   theme: string;
   setTheme: (name: string) => void;
   customAccent: string;
   setCustomAccent: (hex: string) => void;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -26,6 +30,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
   customAccent: "#c9a96e",
   setCustomAccent: () => {},
+  mode: "dark",
+  setMode: () => {},
 });
 
 export function useTheme() {
@@ -42,15 +48,16 @@ function applyVariables(variables: ThemeVariables) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState("midnight");
   const [customAccent, setCustomAccentState] = useState("#c9a96e");
+  const [mode, setModeState] = useState<ThemeMode>("dark");
   const [mounted, setMounted] = useState(false);
 
   // Apply a theme's CSS variables
   const applyTheme = useCallback(
-    (name: string, accent: string) => {
+    (name: string, accent: string, themeMode: ThemeMode) => {
       if (typeof window === "undefined") return;
 
       if (name === "custom") {
-        applyVariables(generateCustomPalette(accent));
+        applyVariables(generateCustomPalette(accent, themeMode));
       } else if (THEMES[name]) {
         applyVariables(THEMES[name].variables);
       }
@@ -61,11 +68,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // On mount: hydrate from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("verecto-theme") || "midnight";
-    const storedAccent = localStorage.getItem("verecto-custom-accent") || "#c9a96e";
+    const storedAccent =
+      localStorage.getItem("verecto-custom-accent") || "#c9a96e";
+    const storedMode =
+      (localStorage.getItem("verecto-theme-mode") as ThemeMode) || "dark";
 
     setThemeState(stored);
     setCustomAccentState(storedAccent);
-    applyTheme(stored, storedAccent);
+    setModeState(storedMode);
+    applyTheme(stored, storedAccent, storedMode);
     setMounted(true);
   }, [applyTheme]);
 
@@ -73,9 +84,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     (name: string) => {
       setThemeState(name);
       localStorage.setItem("verecto-theme", name);
-      applyTheme(name, customAccent);
+      applyTheme(name, customAccent, mode);
     },
-    [applyTheme, customAccent]
+    [applyTheme, customAccent, mode]
   );
 
   const setCustomAccent = useCallback(
@@ -83,10 +94,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setCustomAccentState(hex);
       localStorage.setItem("verecto-custom-accent", hex);
       if (theme === "custom") {
-        applyTheme("custom", hex);
+        applyTheme("custom", hex, mode);
       }
     },
-    [applyTheme, theme]
+    [applyTheme, theme, mode]
+  );
+
+  const setMode = useCallback(
+    (newMode: ThemeMode) => {
+      setModeState(newMode);
+      localStorage.setItem("verecto-theme-mode", newMode);
+      if (theme === "custom") {
+        applyTheme("custom", customAccent, newMode);
+      }
+    },
+    [applyTheme, theme, customAccent]
   );
 
   // Prevent flash of default theme before hydration
@@ -96,7 +118,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider
-      value={{ theme, setTheme, customAccent, setCustomAccent }}
+      value={{ theme, setTheme, customAccent, setCustomAccent, mode, setMode }}
     >
       {children}
     </ThemeContext.Provider>

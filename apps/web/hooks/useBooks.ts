@@ -17,6 +17,8 @@ export interface BookRow {
   mood: "loved_it" | "it_was_fine" | "dnf" | null;
   progress: string | null;
   date_finished: string | null;
+  current_chapter: number | null;
+  total_chapters: number | null;
   created_at: string;
 }
 
@@ -80,7 +82,7 @@ export function useBooks() {
   async function updateBook(
     id: string,
     updates: Partial<
-      Pick<BookRow, "status" | "mood" | "progress" | "date_finished">
+      Pick<BookRow, "status" | "mood" | "progress" | "date_finished" | "current_chapter" | "total_chapters">
     >
   ) {
     const supabase = createClient();

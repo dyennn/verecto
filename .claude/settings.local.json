@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(find /c/Users/dyenm/Desktop/Personal/verecto -name *.sql -type f)"
+    ]
+  }
+}

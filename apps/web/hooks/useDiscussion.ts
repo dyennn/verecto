@@ -11,6 +11,10 @@ export interface DiscussionRow {
   model_used: string | null;
   content: DiscussionGuide;
   created_at: string;
+  progress_snapshot: string | null;
+  chapter_number: number | null;
+  total_chapters: number | null;
+  perspective: "standard" | "antagonist" | "minor_character" | "historical" | null;
 }
 
 export function useDiscussion() {
@@ -40,14 +44,17 @@ export function useDiscussion() {
     setLoading(false);
   }, []);
 
-  async function generateDiscussion(bookId: string) {
+  async function generateDiscussion(
+    bookId: string,
+    options?: { perspective?: string }
+  ) {
     setGenerating(true);
 
     try {
       const res = await fetch("/api/discussion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookId }),
+        body: JSON.stringify({ bookId, perspective: options?.perspective ?? "standard" }),
       });
 
       const result = await res.json();

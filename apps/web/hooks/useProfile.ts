@@ -10,6 +10,10 @@ export interface ProfileRow {
   top_moods: string[];
   reading_streak: number;
   last_read_date: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  reading_goal_per_year: number;
+  discussion_style: "casual" | "academic" | "socratic" | null;
   created_at: string;
 }
 

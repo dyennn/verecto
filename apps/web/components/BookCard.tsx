@@ -44,6 +44,7 @@ export function BookCard({
             src={coverUrl}
             alt={title}
             fill
+            unoptimized
             className="object-cover"
             sizes="80px"
           />

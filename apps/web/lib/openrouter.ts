@@ -135,7 +135,7 @@ async function callOllama(
     headers: { "Content-Type": "application/json", Authorization: "Bearer ollama" },
     body: JSON.stringify({
       model: LOCAL_LLM_MODEL,
-      max_tokens: 1200,
+      max_tokens: 2048,
       temperature: 0.8,
       messages: [
         { role: "system", content: systemPrompt },
@@ -186,7 +186,7 @@ export async function generateDiscussion(
           ...(model.endsWith(":free")
             ? { models: FREE_MODEL_FALLBACKS }
             : { model }),
-          maxTokens: 2048,
+          maxTokens: 4096,
           temperature: 0.8,
           provider: { requireParameters: true },
           messages: [

@@ -308,6 +308,98 @@ export default function LibraryPage() {
                   ))}
                 </div>
               </div>
+              {/* Chapter progress (only for reading) */}
+              {selectedBook.status === "reading" && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Update Progress</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        Chapter
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={selectedBook.total_chapters || 999}
+                        value={selectedBook.current_chapter ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                            ? Number(e.target.value)
+                            : null;
+                          setSelectedBook((prev) =>
+                            prev ? { ...prev, current_chapter: val } : null
+                          );
+                        }}
+                        onBlur={() => {
+                          updateBook(selectedBook.id, {
+                            current_chapter:
+                              selectedBook.current_chapter ?? undefined,
+                          } as Partial<BookRow>);
+                        }}
+                        className="w-16 rounded-md border border-[var(--input)] bg-transparent px-2 py-1 text-sm text-center"
+                        placeholder="—"
+                      />
+                    </div>
+                    <span className="text-xs text-[var(--muted-foreground)]">
+                      of
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={selectedBook.total_chapters ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                            ? Number(e.target.value)
+                            : null;
+                          setSelectedBook((prev) =>
+                            prev ? { ...prev, total_chapters: val } : null
+                          );
+                        }}
+                        onBlur={() => {
+                          updateBook(selectedBook.id, {
+                            total_chapters:
+                              selectedBook.total_chapters ?? undefined,
+                          } as Partial<BookRow>);
+                        }}
+                        className="w-16 rounded-md border border-[var(--input)] bg-transparent px-2 py-1 text-sm text-center"
+                        placeholder="—"
+                      />
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        chapters
+                      </span>
+                    </div>
+                  </div>
+                  {selectedBook.current_chapter &&
+                    selectedBook.total_chapters && (
+                      <div className="space-y-1">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--secondary)]">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                (selectedBook.current_chapter /
+                                  selectedBook.total_chapters) *
+                                  100
+                              )}%`,
+                              backgroundColor: "var(--primary)",
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-[var(--muted-foreground)]">
+                          {Math.round(
+                            (selectedBook.current_chapter /
+                              selectedBook.total_chapters) *
+                              100
+                          )}
+                          % complete
+                        </p>
+                      </div>
+                    )}
+                </div>
+              )}
 
               {/* Mood (only for finished) */}
               {selectedBook.status === "finished" && (

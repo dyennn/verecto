@@ -201,30 +201,69 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-export function generateCustomPalette(accentHex: string): ThemeVariables {
-  const [h] = hexToHsl(accentHex);
-  const isDark = luminance(accentHex) < 0.5;
-  const primaryFg = isDark ? "#ffffff" : "#000000";
+export function generateCustomPalette(
+  accentHex: string,
+  mode: "light" | "dark" = "dark"
+): ThemeVariables {
+  const [h, s] = hexToHsl(accentHex);
+  // Clamp saturation so derived colors aren't too vivid or too flat
+  const baseSat = Math.min(s, 30);
+
+  if (mode === "dark") {
+    // Determine if the accent is light enough to read on dark backgrounds
+    const accentLum = luminance(accentHex);
+    const primaryFg = accentLum > 0.4 ? "#000000" : "#ffffff";
+
+    return {
+      "--background": hslToHex(h, baseSat, 4),
+      "--foreground": hslToHex(h, 10, 93),
+      "--card": hslToHex(h, baseSat, 7),
+      "--card-foreground": hslToHex(h, 10, 93),
+      "--popover": hslToHex(h, baseSat, 7),
+      "--popover-foreground": hslToHex(h, 10, 93),
+      "--primary": accentHex,
+      "--primary-foreground": primaryFg,
+      "--secondary": hslToHex(h, baseSat - 5, 12),
+      "--secondary-foreground": hslToHex(h, 10, 93),
+      "--muted": hslToHex(h, baseSat - 5, 12),
+      "--muted-foreground": hslToHex(h, 10, 55),
+      "--accent": accentHex,
+      "--accent-foreground": primaryFg,
+      "--destructive": "#e74c3c",
+      "--destructive-foreground": hslToHex(h, 10, 93),
+      "--border": hslToHex(h, baseSat - 5, 17),
+      "--input": hslToHex(h, baseSat - 5, 17),
+      "--ring": accentHex,
+    };
+  }
+
+  // Light mode
+  // If the accent is too light for white backgrounds, darken it
+  const accentLum = luminance(accentHex);
+  const [, accentS, accentL] = hexToHsl(accentHex);
+  const primary = accentLum > 0.4 ? hslToHex(h, accentS, Math.max(accentL - 20, 30)) : accentHex;
+  const primaryLum = luminance(primary);
+  const primaryFg = primaryLum > 0.4 ? "#000000" : "#ffffff";
 
   return {
-    "--background": hslToHex(h, 20, 4),
-    "--foreground": hslToHex(h, 15, 95),
-    "--card": hslToHex(h, 20, 8),
-    "--card-foreground": hslToHex(h, 15, 95),
-    "--popover": hslToHex(h, 20, 8),
-    "--popover-foreground": hslToHex(h, 15, 95),
-    "--primary": accentHex,
+    "--background": hslToHex(h, Math.min(baseSat, 15), 97),
+    "--foreground": hslToHex(h, 20, 8),
+    "--card": hslToHex(h, Math.min(baseSat, 12), 94),
+    "--card-foreground": hslToHex(h, 20, 8),
+    "--popover": hslToHex(h, Math.min(baseSat, 12), 94),
+    "--popover-foreground": hslToHex(h, 20, 8),
+    "--primary": primary,
     "--primary-foreground": primaryFg,
-    "--secondary": hslToHex(h, 15, 12),
-    "--secondary-foreground": hslToHex(h, 15, 95),
-    "--muted": hslToHex(h, 15, 12),
-    "--muted-foreground": hslToHex(h, 10, 55),
-    "--accent": accentHex,
+    "--secondary": hslToHex(h, Math.min(baseSat, 10), 90),
+    "--secondary-foreground": hslToHex(h, 20, 12),
+    "--muted": hslToHex(h, Math.min(baseSat, 10), 90),
+    "--muted-foreground": hslToHex(h, 10, 40),
+    "--accent": primary,
     "--accent-foreground": primaryFg,
-    "--destructive": "#e74c3c",
-    "--destructive-foreground": hslToHex(h, 15, 95),
-    "--border": hslToHex(h, 15, 17),
-    "--input": hslToHex(h, 15, 17),
-    "--ring": accentHex,
+    "--destructive": "#c0392b",
+    "--destructive-foreground": "#ffffff",
+    "--border": hslToHex(h, Math.min(baseSat, 12), 82),
+    "--input": hslToHex(h, Math.min(baseSat, 12), 82),
+    "--ring": primary,
   };
 }
