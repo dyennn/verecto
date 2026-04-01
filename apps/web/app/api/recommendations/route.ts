@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { OpenRouter } from "@openrouter/sdk";
 import type { ChatResponse } from "@openrouter/sdk/models/chatresponse.js";
 
+export const maxDuration = 60;
+
 const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL;
 const LOCAL_LLM_MODEL = process.env.LOCAL_LLM_MODEL ?? "llama3.3";
 

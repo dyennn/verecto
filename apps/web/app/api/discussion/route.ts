@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { generateDiscussion, MODELS } from "@/lib/openrouter";
 
+export const maxDuration = 60;
+
 const STYLE_INSTRUCTIONS: Record<string, string> = {
   casual:
     "Use a warm, casual tone — as if chatting with friends in a book club. Keep it fun and accessible.",
