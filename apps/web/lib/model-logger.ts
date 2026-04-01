@@ -14,11 +14,16 @@ export interface ModelLogEntry {
 }
 
 export function logModelDecision(entry: ModelLogEntry): void {
+  // Always log to console — visible in Vercel Runtime Logs
+  console.log("[model-decision]", JSON.stringify(entry));
+
+  // Also write to file for local development
   try {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
+    if (!fs.existsSync(LOG_DIR)) {
+      fs.mkdirSync(LOG_DIR, { recursive: true });
+    }
     fs.appendFileSync(LOG_FILE, JSON.stringify(entry) + "\n", "utf8");
-  } catch (err) {
-    // Logging must never crash the app
-    console.error("Failed to write model log:", err);
+  } catch {
+    // Silently ignore file write failures in serverless (ephemeral filesystem)
   }
 }

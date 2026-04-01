@@ -1,0 +1,14 @@
+{
+  "buildCommand": "cd apps/web && npm run build",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "functions": {
+    "apps/web/app/api/discussion/route.ts": {
+      "maxDuration": 60
+    },
+    "apps/web/app/api/recommendations/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
