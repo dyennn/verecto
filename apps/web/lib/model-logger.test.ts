@@ -3,23 +3,34 @@ import type { ModelLogEntry } from "@/lib/model-logger";
 
 // ---------------------------------------------------------------------------
 // Mock Node.js `fs` module — we must not touch the real filesystem in tests.
+// The module uses `import fs from "fs"` (default import).
+// vi.mock is hoisted to the top, so we define mocks inside the factory.
 // ---------------------------------------------------------------------------
-const mockMkdirSync = vi.fn();
-const mockAppendFileSync = vi.fn();
-
-vi.mock("fs", () => ({
-  default: {
-    mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
-    appendFileSync: (...args: unknown[]) => mockAppendFileSync(...args),
-  },
-  mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
-  appendFileSync: (...args: unknown[]) => mockAppendFileSync(...args),
-}));
+vi.mock("fs", async () => {
+  const actual = await vi.importActual<typeof import("fs")>("fs");
+  return {
+    ...actual,
+    default: {
+      existsSync: vi.fn(() => false),
+      mkdirSync: vi.fn(),
+      appendFileSync: vi.fn(),
+    },
+    existsSync: vi.fn(() => false),
+    mkdirSync: vi.fn(),
+    appendFileSync: vi.fn(),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Import AFTER the mock is set up so the module picks up the mocked fs.
+// We need to access the default export since that's what model-logger.ts uses.
 // ---------------------------------------------------------------------------
+import fsDefault from "fs";
 import { logModelDecision } from "@/lib/model-logger";
+
+const mockMkdirSync = vi.mocked(fsDefault.mkdirSync);
+const mockAppendFileSync = vi.mocked(fsDefault.appendFileSync);
+const mockExistsSync = vi.mocked(fsDefault.existsSync);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -40,6 +51,7 @@ function makeEntry(overrides: Partial<ModelLogEntry> = {}): ModelLogEntry {
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   vi.clearAllMocks();
+  mockExistsSync.mockReturnValue(false);
 });
 
 afterEach(() => {

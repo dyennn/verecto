@@ -1,6 +1,6 @@
 import { OpenRouter } from "@openrouter/sdk";
 import type { ChatResponse } from "@openrouter/sdk/models/chatresponse.js";
-import { logModelDecision } from "./model-logger";
+import { logModelDecision } from "./model-logger-serverless";
 
 const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL;
 const LOCAL_LLM_MODEL = process.env.LOCAL_LLM_MODEL ?? "llama3.3";
